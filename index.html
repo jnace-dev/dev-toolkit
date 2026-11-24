@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevToolkit · 开发者效率工具箱</title>
+<style>
+:root{
+  --bg:#0f1115;
+  --bg-soft:#161a21;
+  --bg-elev:#1c222b;
+  --bg-input:#0b0d11;
+  --border:#2a323d;
+  --border-soft:#222a33;
+  --text:#e6e9ef;
+  --text-dim:#9aa4b2;
+  --text-mute:#6b7480;
+  --accent:#4f8cff;
+  --accent-soft:#1f3a6e;
+  --accent-text:#cfe0ff;
+  --success:#3fb950;
+  --danger:#f85149;
+  --warn:#d29922;
+  --radius:10px;
+  --radius-sm:6px;
+  --mono:ui-monospace,SFMono-Regular,"JetBrains Mono","Fira Code",Consolas,"Courier New",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+  --swatch-shadow:0 2px 10px rgba(255,255,255,.20), 0 0 0 1px rgba(255,255,255,.12);
+}
+[data-theme="light"]{
+  --bg:#f6f8fa;
+  --bg-soft:#ffffff;
+  --bg-elev:#ffffff;
+  --bg-input:#f6f8fa;
+  --border:#d0d7de;
+  --border-soft:#e6ebf1;
+  --text:#1f2328;
+  --text-dim:#656d76;
+  --text-mute:#8c959f;
+  --accent:#0969da;
+  --accent-soft:#ddf4ff;
+  --accent-text:#0969da;
+  --success:#1a7f37;
+  --danger:#cf222e;
+  --warn:#9a6700;
+  --shadow:0 8px 30px rgba(27,31,36,.12);
+  --swatch-shadow:0 2px 8px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s,color .25s;
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;
+  background:var(--bg-soft);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:10;
+  backdrop-filter:saturate(1.4) blur(8px);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),#7b5cff);
+  display:grid;place-items:center;
+  font-weight:800;color:#fff;font-size:18px;
+  box-shadow:0 4px 14px rgba(79,140,255,.35);
+}
+.brand h1{font-size:17px;font-weight:700;letter-spacing:.2px}
+.brand .sub{font-size:12px;color:var(--text-dim);margin-top:1px}
+.header-actions{display:flex;align-items:center;gap:10px}
+.icon-btn{
+  width:38px;height:38px;border-radius:9px;
+  border:1px solid var(--border);
+  background:var(--bg-elev);
+  color:var(--text-dim);
+  cursor:pointer;display:grid;place-items:center;
+  font-size:16px;transition:all .18s;
+}
+.icon-btn:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-1px)}
+.theme-ctrl{display:flex;align-items:center;gap:8px}
+.auto-toggle{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12.5px;color:var(--text-dim);cursor:pointer;
+  user-select:none;padding:5px 8px;border-radius:9px;
+  transition:background .18s,color .18s;
+}
+.auto-toggle:hover{background:var(--accent-soft);color:var(--accent-text)}
+.auto-toggle input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.auto-toggle .track{
+  position:relative;width:38px;height:20px;border-radius:20px;
+  background:var(--bg-input);border:1px solid var(--border);
+  transition:background .2s ease,border-color .2s ease;
+  flex:0 0 auto;
+}
+.auto-toggle .track::before{
+  content:"";position:absolute;top:50%;left:2px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--text-dim);
+  transform:translateY(-50%);
+  transition:left .2s ease,background .2s ease;
+  box-shadow:0 1px 3px rgba(0,0,0,.35);
+}
+.auto-toggle input:checked + .track{
+  background:var(--accent);border-color:var(--accent);
+}
+.auto-toggle input:checked + .track::before{
+  left:calc(100% - 16px);
+  background:#fff;
+}
+.auto-toggle .txt{font-weight:600;letter-spacing:.3px}
+.theme-flash{
+  position:fixed;inset:0;pointer-events:none;z-index:99999;
+  background:var(--bg);opacity:0;
+  animation:flash .5s ease;
+}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+nav{
+  display:flex;gap:4px;overflow-x:auto;
+  padding:10px 28px;background:var(--bg-soft);
+  border-bottom:1px solid var(--border);
+  scrollbar-width:thin;
+}
+nav::-webkit-scrollbar{height:6px}
+nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.tab{
+  flex:0 0 auto;
+  padding:8px 16px;border-radius:8px;
+  border:1px solid transparent;
+  background:transparent;color:var(--text-dim);
+  cursor:pointer;font-size:13.5px;font-weight:500;
+  white-space:nowrap;transition:all .18s;font-family:var(--sans);
+}
+.tab:hover{color:var(--text);background:var(--bg-elev)}
+.tab.active{
+  background:var(--accent-soft);color:var(--accent-text);
+  border-color:var(--accent);
+}
+main{max-width:1080px;margin:0 auto;padding:28px}
+.panel{display:none;animation:fade .25s ease}
+.panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel-head{margin-bottom:18px}
+.panel-head h2{font-size:22px;font-weight:700}
+.panel-head p{color:var(--text-dim);font-size:14px;margin-top:4px}
+.card{
+  background:var(--bg-soft);border:1px solid var(--border);
+  border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);
+}
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+.field label{
+  display:block;font-size:13px;font-weight:600;
+  color:var(--text-dim);margin-bottom:8px;
+}
+textarea,input[type="text"],input[type="number"],input[type="datetime-local"],select{
+  width:100%;font-family:var(--mono);font-size:13.5px;
+  background:var(--bg-input);color:var(--text);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;outline:none;transition:border-color .18s,box-shadow .18s;
+  resize:vertical;line-height:1.55;
+}
+textarea:focus,input:focus,select:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);
+}
+textarea{min-height:120px}
+.output textarea{background:transparent;border-style:dashed}
+input[type="color"]{
+  -webkit-appearance:none;appearance:none;
+  width:46px;height:46px;padding:0;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--bg-input);
+  cursor:pointer;
+  transition:transform .18s,box-shadow .18s,border-color .18s;
+  box-shadow:var(--swatch-shadow);
+}
+input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+input[type="color"]::-webkit-color-swatch{border:none;border-radius:9px}
+input[type="color"]::-moz-color-swatch{border:none;border-radius:9px}
+input[type="color"]:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(79,140,255,.45)}
+input[type="color"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);cursor:pointer;user-select:none}
+.chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{
+  font-family:var(--sans);font-size:13.5px;font-weight:600;
+  padding:9px 18px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--bg-elev);
+  color:var(--text);cursor:pointer;transition:all .18s;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:#3f7af0;border-color:#3f7af0;color:#fff}
+.btn-ghost{background:transparent}
+.btn .act-struct{font-family:var(--mono);font-size:10.5px;font-weight:500;padding:2px 6px;border-radius:4px;background:var(--bg-input);border:1px solid var(--border-soft);color:var(--text-mute);letter-spacing:.2px}
+.btn .act-result{font-family:var(--mono);font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:.2px;display:none}
+.btn .act-result.ok{display:block;background:var(--success);color:#fff}
+.btn .act-result.err{display:block;background:var(--danger);color:#fff}
+.btn-danger:hover{border-color:var(--danger);color:var(--danger)}
+.hint{font-size:12px;color:var(--text-mute);margin-top:8px}
+.hint.err{color:var(--danger)}
+.hint.ok{color:var(--success)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:720px){.grid-2{grid-template-columns:1fr}main{padding:18px}header{padding:14px 18px}nav{padding:10px 18px}}
+.toast{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--bg-elev);border:1px solid var(--border);
+  color:var(--text);padding:11px 22px;border-radius:10px;
+  font-size:13.5px;box-shadow:var(--shadow);opacity:0;
+  pointer-events:none;transition:all .25s;z-index:9999;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--success)}
+.toast.err{border-color:var(--danger)}
+.match-list{font-family:var(--mono);font-size:13px;line-height:1.7}
+.match-item{
+  padding:8px 12px;border-radius:6px;margin-bottom:6px;
+  background:var(--bg-input);border:1px solid var(--border-soft);
+  word-break:break-all;
+}
+.match-item .g{color:var(--accent);font-weight:600}
+.badge{
+  display:inline-block;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:20px;background:var(--accent-soft);
+  color:var(--accent-text);margin-left:8px;vertical-align:middle;
+}
+.color-row{display:flex;gap:12px;align-items:center}
+.color-preview{
+  width:46px;height:46px;border-radius:10px;border:1px solid var(--border);
+  flex:0 0 auto;box-shadow:inset 0 0 0 2px rgba(255,255,255,.06);
+}
+footer{
+  text-align:center;padding:24px;color:var(--text-mute);
+  font-size:12.5px;border-top:1px solid var(--border);margin-top:40px;
+}
+footer a{color:var(--accent);text-decoration:none}
+.kbd{
+  font-family:var(--mono);font-size:11px;padding:1px 6px;
+  border:1px solid var(--border);border-radius:4px;background:var(--bg-input);
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">D</div>
+    <div>
+      <h1>DevToolkit <span class="badge">v1.0</span></h1>
+      <div class="sub">开发者效率工具箱 · 单文件 · 零依赖</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="theme-ctrl">
+    <label class="auto-toggle" id="autoToggle"><input type="checkbox" id="autoChk"><span class="track"></span><span class="txt">自动</span></label>
+    <button class="icon-btn" id="themeBtn" title="深色">🌙</button>
+  </div>
+  </div>
+</header>
+<nav id="tabs">
+  <button class="tab active" data-tab="json">JSON</button>
+  <button class="tab" data-tab="base64">Base64</button>
+  <button class="tab" data-tab="url">URL</button>
+  <button class="tab" data-tab="timestamp">时间戳</button>
+  <button class="tab" data-tab="uuid">UUID</button>
+  <button class="tab" data-tab="regex">正则测试</button>
+  <button class="tab" data-tab="color">颜色转换</button>
+  <button class="tab" data-tab="html">HTML 实体</button>
+  <button class="tab" data-tab="pwd">密码生成</button>
+</nav>
+<main>
+
+<section class="panel active" id="panel-json">
+  <div class="panel-head">
+    <h2>JSON 格式化 / 校验</h2>
+    <p>格式化、压缩、校验 JSON 文本，支持中文与转义字符。</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="json-in">输入 JSON</label>
+      <textarea id="json-in" placeholder='例如：{"name":"DevToolkit","version":1.0}'></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="json-format">格式化</button>
+      <button class="btn" data-act="json-compress">压缩</button>
+      <button class="btn" data-act="json-validate">校验<span class="act-result"></span></button>
+      <button class="btn btn-ghost" data-act="json-sample">示例<span class="act-result"></span></button>
+      <button class="btn btn-ghost" data-act="json-escape">转义 \uXXXX</button>
+      <button class="btn btn-ghost" data-act="json-unescape">转为汉字</button>
+      <button class="btn btn-ghost btn-danger" data-act="json-clear">清空</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label for="json-out" style="margin-bottom:0">结果</label>
+        <button class="icon-btn" id="json-out-copy" title="复制结果">📋</button>
+      </div>
+      <textarea id="json-out" readonly style="margin-top:14px"></textarea>
+    </div>
+    <div class="hint" id="json-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-base64">
+  <div class="panel-head">
+    <h2>Base64 编码 / 解码</h2>
+    <p>支持 UTF-8 中文，双向转换。</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="b64-in">输入文本</label>
+      <textarea id="b64-in" placeholder="输入要编码或解码的文本"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="b64-encode">编码 → Base64</button>
+      <button class="btn" data-act="b64-decode">解码 ← Base64</button>
+      <button class="btn btn-ghost btn-danger" data-act="b64-clear">清空</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label for="b64-out">结果</label>
+      <textarea id="b64-out" readonly></textarea>
+    </div>
+    <div class="hint" id="b64-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-url">
+  <div class="panel-head">
+    <h2>URL 编码 / 解码</h2>
+    <p>提供 <code>encodeURIComponent</code> 与 <code>encodeURI</code> 两种模式。</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="url-in">输入文本</label>
+      <textarea id="url-in" placeholder="输入要编码或解码的 URL / 文本"></textarea>
+    </div>
+    <div class="field">
+      <label for="url-mode">模式</label>
+      <select id="url-mode">
+        <option value="component" selected>encodeURIComponent（编码全部保留字符）</option>
+        <option value="full">encodeURI（不编码 :/#? 等）</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="url-encode">编码</button>
+      <button class="btn" data-act="url-decode">解码</button>
+      <button class="btn btn-ghost btn-danger" data-act="url-clear">清空</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label for="url-out">结果</label>
+      <textarea id="url-out" readonly></textarea>
+    </div>
+    <div class="hint" id="url-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-timestamp">
+  <div class="panel-head">
+    <h2>时间戳 ↔ 日期</h2>
+    <p>自动识别秒 / 毫秒，双向转换，支持本地时区。</p>
+  </div>
+  <div class="card">
+    <div class="grid-2">
+      <div class="field">
+        <label for="ts-in">时间戳（秒或毫秒）</label>
+        <input type="text" id="ts-in" placeholder="如 1700000000 或 1700000000000">
+        <div class="btn-row">
+          <button class="btn btn-primary" data-act="ts-to-date">→ 日期</button>
+          <button class="btn btn-ghost" data-act="ts-now">当前时间戳</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="ts-date">日期时间</label>
+        <input type="datetime-local" id="ts-date">
+        <div class="btn-row">
+          <button class="btn btn-primary" data-act="ts-to-ts">→ 时间戳</button>
+          <button class="btn btn-ghost" data-act="ts-now-date">当前时间</button>
+        </div>
+      </div>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label>转换结果</label>
+      <textarea id="ts-out" readonly></textarea>
+    </div>
+    <div class="hint" id="ts-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-uuid">
+  <div class="panel-head">
+    <h2>UUID 生成器</h2>
+    <p>生成 RFC 4122 v4 UUID，支持批量、大小写、连字符选项。</p>
+  </div>
+  <div class="card">
+    <div class="grid-2">
+      <div class="field">
+        <label for="uuid-count">生成数量</label>
+        <input type="number" id="uuid-count" value="1" min="1" max="500">
+        <div class="hint">最多 500 个</div>
+      </div>
+      <div class="field">
+        <label for="uuid-opt">选项</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:6px;font-weight:400;color:var(--text);cursor:pointer">
+            <input type="checkbox" id="uuid-upper" checked> 大写
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:400;color:var(--text);cursor:pointer">
+            <input type="checkbox" id="uuid-dash" checked> 保留连字符
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="uuid-gen">生成</button>
+      <button class="btn" data-act="uuid-copy">全部复制</button>
+      <button class="btn btn-ghost btn-danger" data-act="uuid-clear">清空</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label for="uuid-out">结果</label>
+      <textarea id="uuid-out" readonly></textarea>
+    </div>
+    <div class="hint" id="uuid-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-regex">
+  <div class="panel-head">
+    <h2>正则表达式测试</h2>
+    <p>实时匹配，高亮命中内容，显示捕获分组。</p>
+  </div>
+  <div class="card">
+    <div class="grid-2">
+      <div class="field">
+        <label for="re-pattern">正则表达式</label>
+        <input type="text" id="re-pattern" placeholder="如 \d+">
+      </div>
+      <div class="field">
+        <label for="re-flags">flags</label>
+        <input type="text" id="re-flags" placeholder="如 gimsuy">
+      </div>
+    </div>
+    <div class="field">
+      <label for="re-text">测试文本</label>
+      <textarea id="re-text" placeholder="输入要匹配的文本"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="re-run">执行匹配</button>
+      <button class="btn btn-ghost btn-danger" data-act="re-clear">清空</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label>匹配结果</label>
+      <div id="re-out" class="match-list"></div>
+    </div>
+    <div class="hint" id="re-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-color">
+  <div class="panel-head">
+    <h2>颜色码转换</h2>
+    <p>HEX ↔ RGB 双向转换，实时预览。</p>
+  </div>
+  <div class="card">
+    <div class="grid-2">
+      <div class="field">
+        <label for="c-hex">HEX</label>
+        <input type="text" id="c-hex" placeholder="#4f8cff 或 4f8cff">
+      </div>
+      <div class="field">
+        <label for="c-rgb">RGB</label>
+        <input type="text" id="c-rgb" placeholder="rgb(79, 140, 255)">
+      </div>
+    </div>
+    <div class="color-row" style="margin-top:8px">
+      <input type="color" id="c-picker" value="#4f8cff">
+      <div style="flex:1">
+        <div class="hint" id="c-hint">输入任一格式，自动转换另一格式</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="c-hex2rgb">HEX → RGB</button>
+      <button class="btn" data-act="c-rgb2hex">RGB → HEX</button>
+      <button class="btn btn-ghost btn-danger" data-act="c-clear">清空</button>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="panel-html">
+  <div class="panel-head">
+    <h2>HTML 实体编码 / 解码</h2>
+    <p>在 HTML 文本与实体之间互转，防止 XSS 转义场景。</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="html-in">输入文本</label>
+      <textarea id="html-in" placeholder="输入要编码或解码的文本"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="html-encode">编码 → 实体</button>
+      <button class="btn" data-act="html-decode">解码 ← 实体</button>
+      <button class="btn btn-ghost btn-danger" data-act="html-clear">清空</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label for="html-out">结果</label>
+      <textarea id="html-out" readonly></textarea>
+    </div>
+    <div class="hint" id="html-hint"></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-pwd">
+  <div class="panel-head">
+    <h2>密码生成</h2>
+    <p>按长度与字符集生成随机密码，保证每类至少一位。</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="pwd-len">长度</label>
+      <input type="number" id="pwd-len" value="16" min="4" max="128">
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label>字符集</label>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px">
+        <label class="chk"><input type="checkbox" id="pwd-upper" checked> 大写 A-Z</label>
+        <label class="chk"><input type="checkbox" id="pwd-lower" checked> 小写 a-z</label>
+        <label class="chk"><input type="checkbox" id="pwd-digit" checked> 数字 0-9</label>
+        <label class="chk"><input type="checkbox" id="pwd-symbol"> 符号 !@#</label>
+        <label class="chk"><input type="checkbox" id="pwd-exclude" checked> 排除易混淆 iIl1o0O</label>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-act="pwd-gen">生成</button>
+      <button class="btn" data-act="pwd-copy">复制</button>
+      <button class="btn btn-ghost btn-danger" data-act="pwd-clear">清空</button>
+      <button class="btn btn-ghost" data-act="pwd-clear-history">清空历史</button>
+    </div>
+    <div class="field output" style="margin-top:18px">
+      <label for="pwd-out">密码</label>
+      <textarea id="pwd-out" readonly></textarea>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label for="pwd-history">历史记录</label>
+      <textarea id="pwd-history" readonly style="min-height:120px"></textarea>
+    </div>
+    <div class="hint" id="pwd-hint"></div>
+  </div>
+</section>
+
+</main>
+<footer>
+  DevToolkit · 单文件开发者工具箱 &nbsp;·&nbsp; 开源协议 MIT &nbsp;·&nbsp;
+  <a href="#" id="footer-src">查看源码</a>
+</footer>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var toastEl=$("toast");
+  function toast(msg,type){
+    toastEl.textContent=msg;
+    toastEl.className="toast show "+(type||"");
+    clearTimeout(toast._t);
+    toast._t=setTimeout(function(){toastEl.className="toast";},1800);
+  }
+  function copy(text){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){toast("已复制","ok");},function(){fallbackCopy(text);});
+    }else{fallbackCopy(text);}
+  }
+  function fallbackCopy(text){
+    var ta=document.createElement("textarea");
+    ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");toast("已复制","ok");}catch(e){toast("复制失败","err");}
+    document.body.removeChild(ta);
+  }
+  function setHint(el,msg,type){
+    el.className="hint"+(type?" "+type:"");
+    el.textContent=msg;
+  }
+
+  var themeBtn=$("themeBtn");
+  var autoChk=$("autoChk");
+  var autoToggle=$("autoToggle");
+  var AUTO_KEY="dt-theme-auto";
+  var MANUAL_KEY="dt-theme-manual";
+  var supportsMQ=!!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)"));
+  function getStored(k,def){try{var v=localStorage.getItem(k);return v===null?def:v;}catch(e){return def;}}
+  function setStored(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function systemPrefersDark(){return supportsMQ&&window.matchMedia("(prefers-color-scheme: dark)").matches;}
+  function applyTheme(){
+    var autoOn=supportsMQ&&getStored(AUTO_KEY,"on")==="on";
+    var manual=getStored(MANUAL_KEY,"dark");
+    var resolved=autoOn?(systemPrefersDark()?"dark":"light"):(manual==="light"?"light":"dark");
+    document.documentElement.setAttribute("data-theme",resolved);
+    document.documentElement.setAttribute("data-theme-auto",supportsMQ?(autoOn?"on":"off"):"unavailable");
+    document.documentElement.setAttribute("data-theme-source",autoOn?"auto":"manual");
+    themeBtn.textContent=resolved==="dark"?"🌙":"☀";
+    themeBtn.title=resolved==="dark"?"深色":"浅色";
+    if(supportsMQ){
+      autoToggle.style.display="";
+      autoChk.checked=autoOn;
+      themeBtn.style.display=autoOn?"none":"";
+    }else{
+      autoToggle.style.display="none";
+      themeBtn.style.display="";
+    }
+  }
+  function flashTheme(){
+    var f=document.createElement("div");
+    f.className="theme-flash";
+    document.body.appendChild(f);
+    setTimeout(function(){if(f.parentNode)f.parentNode.removeChild(f);},520);
+  }
+  autoChk.addEventListener("change",function(){
+    if(autoChk.checked){
+      setStored(AUTO_KEY,"on");
+      applyTheme();
+    }else{
+      setStored(AUTO_KEY,"off");
+      var cur=document.documentElement.getAttribute("data-theme");
+      setStored(MANUAL_KEY,cur==="dark"?"light":"dark");
+      applyTheme();
+      flashTheme();
+    }
+  });
+  themeBtn.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    setStored(MANUAL_KEY,cur==="dark"?"light":"dark");
+    applyTheme();
+  });
+  if(supportsMQ){
+    var mq=window.matchMedia("(prefers-color-scheme: dark)");
+    if(mq&&mq.addEventListener){
+      mq.addEventListener("change",function(){
+        if(getStored(AUTO_KEY,"on")==="on"){applyTheme();}
+      });
+    }
+  }
+  applyTheme();
+
+  var tabs=document.querySelectorAll(".tab");
+  tabs.forEach(function(t){
+    t.addEventListener("click",function(){
+      tabs.forEach(function(x){x.classList.remove("active");});
+      t.classList.add("active");
+      document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
+      $("panel-"+t.dataset.tab).classList.add("active");
+    });
+  });
+
+  $("footer-src").addEventListener("click",function(e){
+    e.preventDefault();
+    toast("源码即本页 index.html",1);
+  });
+
+  function bind(act,fn){
+    document.querySelectorAll('[data-act="'+act+'"]').forEach(function(b){
+      b.addEventListener("click",fn);
+    });
+  }
+
+  bind("json-format",function(){
+    var v=$("json-in").value;
+    try{
+      var obj=JSON.parse(v);
+      $("json-out").value=JSON.stringify(obj,null,2);
+      setHint($("json-hint"),"格式化成功","ok");
+    }catch(e){setHint($("json-hint"),"错误："+e.message,"err");}
+  });
+  bind("json-compress",function(){
+    try{
+      var obj=JSON.parse($("json-in").value);
+      $("json-out").value=JSON.stringify(obj);
+      setHint($("json-hint"),"压缩成功","ok");
+    }catch(e){setHint($("json-hint"),"错误："+e.message,"err");}
+  });
+  bind("json-validate",function(){
+    var r=this.querySelector(".act-result");
+    if(r&&r._t)clearTimeout(r._t);
+    try{
+      JSON.parse($("json-in").value);
+      setHint($("json-hint"),"");
+      if(r){r.textContent="合法 ✓";r.className="act-result ok";r._t=setTimeout(function(){r.textContent="";r.className="act-result";},3000);}
+    }catch(e){setHint($("json-hint"),"");
+      if(r){r.textContent="非法 ✗";r.className="act-result err";r._t=setTimeout(function(){r.textContent="";r.className="act-result";},3000);}
+    }
+  });
+  bind("json-sample",function(){
+    $("json-in").value=JSON.stringify({name:"DevToolkit",version:1.0,features:["json","base64","url","timestamp","uuid","regex","color","html"],license:"MIT"},null,2);
+    setHint($("json-hint"),"");
+    var r=this.querySelector(".act-result");
+    if(r&&r._t)clearTimeout(r._t);
+    if(r){r.textContent="已填入示例 ✓";r.className="act-result ok";r._t=setTimeout(function(){r.textContent="";r.className="act-result";},3000);}
+  });
+  bind("json-clear",function(){$("json-in").value="";$("json-out").value="";setHint($("json-hint"),"");});
+  bind("json-escape",function(){
+    var v=$("json-in").value;
+    if(!v){setHint($("json-hint"),"请输入 JSON","err");return;}
+    var out=v.replace(/[\u0100-\uFFFF]/g,function(c){
+      var hex=c.charCodeAt(0).toString(16).toUpperCase();
+      while(hex.length<4)hex="0"+hex;
+      return "\\u"+hex;
+    });
+    $("json-out").value=out;
+    setHint($("json-hint"),"已转义为 \\uXXXX","ok");
+  });
+  bind("json-unescape",function(){
+    var v=$("json-in").value;
+    if(!v){setHint($("json-hint"),"请输入 JSON","err");return;}
+    var out=v.replace(/\\u([0-9a-fA-F]{4})/g,function(_,h){return String.fromCharCode(parseInt(h,16));});
+    $("json-out").value=out;
+    setHint($("json-hint"),"已转为汉字","ok");
+  });
+  $("json-out-copy").addEventListener("click",function(){
+    var v=$("json-out").value;
+    if(!v){toast("暂无结果","err");return;}
+    copy(v);
+  });
+
+  function b64enc(str){return btoa(unescape(encodeURIComponent(str)));}
+  function b64dec(str){return decodeURIComponent(escape(atob(str)));}
+  bind("b64-encode",function(){
+    var v=$("b64-in").value;
+    try{$("b64-out").value=b64enc(v);setHint($("b64-hint"),"编码成功","ok");}
+    catch(e){setHint($("b64-hint"),"错误："+e.message,"err");}
+  });
+  bind("b64-decode",function(){
+    var v=$("b64-in").value.trim();
+    try{$("b64-out").value=b64dec(v);setHint($("b64-hint"),"解码成功","ok");}
+    catch(e){setHint($("b64-hint"),"解码失败，请检查输入","err");}
+  });
+  bind("b64-clear",function(){$("b64-in").value="";$("b64-out").value="";setHint($("b64-hint"),"");});
+
+  bind("url-encode",function(){
+    var v=$("url-in").value;var mode=$("url-mode").value;
+    try{
+      $("url-out").value=mode==="full"?encodeURI(v):encodeURIComponent(v);
+      setHint($("url-hint"),"编码成功","ok");
+    }catch(e){setHint($("url-hint"),"错误："+e.message,"err");}
+  });
+  bind("url-decode",function(){
+    var v=$("url-in").value;var mode=$("url-mode").value;
+    try{
+      $("url-out").value=mode==="full"?decodeURI(v):decodeURIComponent(v);
+      setHint($("url-hint"),"解码成功","ok");
+    }catch(e){setHint($("url-hint"),"解码失败："+e.message,"err");}
+  });
+  bind("url-clear",function(){$("url-in").value="";$("url-out").value="";setHint($("url-hint"),"");});
+
+  function pad(n){return n<10?"0"+n:""+n;}
+  function fmtDate(d){
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+" "+pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
+  }
+  function fmtLocal(d){
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  bind("ts-to-date",function(){
+    var v=$("ts-in").value.trim();
+    if(!v){setHint($("ts-hint"),"请输入时间戳","err");return;}
+    var t=Number(v);
+    if(!isFinite(t)){setHint($("ts-hint"),"时间戳格式错误","err");return;}
+    if(String(v).length<=10)t=t*1000;
+    var d=new Date(t);
+    if(isNaN(d.getTime())){setHint($("ts-hint"),"无效时间戳","err");return;}
+    $("ts-out").value=fmtDate(d)+"\n毫秒："+d.getTime()+"\nUTC："+d.toISOString();
+    setHint($("ts-hint"),"转换成功","ok");
+  });
+  bind("ts-now",function(){
+    var now=Date.now();
+    $("ts-in").value=now;
+    $("ts-out").value="当前毫秒时间戳："+now+"\n秒级："+Math.floor(now/1000)+"\n本地时间："+fmtDate(new Date(now));
+    setHint($("ts-hint"),"已填入当前时间戳","ok");
+  });
+  bind("ts-to-ts",function(){
+    var v=$("ts-date").value.trim();
+    if(!v){setHint($("ts-hint"),"请输入日期时间","err");return;}
+    var t=Date.parse(v);
+    if(isNaN(t)){setHint($("ts-hint"),"日期格式无效，建议 YYYY-MM-DD HH:mm:ss","err");return;}
+    $("ts-out").value="毫秒："+t+"\n秒："+Math.floor(t/1000);
+    setHint($("ts-hint"),"转换成功","ok");
+  });
+  bind("ts-now-date",function(){
+    var s=fmtLocal(new Date());
+    $("ts-date").value=s;
+    $("ts-out").value="当前时间："+fmtDate(new Date())+"\n毫秒时间戳："+Date.now();
+    setHint($("ts-hint"),"已填入当前时间","ok");
+  });
+  function uuid(){
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c){
+      var r=Math.random()*16|0,v=c==="x"?r:(r&0x3|0x8);
+      return v.toString(16);
+    });
+  }
+  bind("uuid-gen",function(){
+    var n=parseInt($("uuid-count").value,10)||1;
+    if(n<1)n=1;if(n>500)n=500;
+    var up=$("uuid-upper").checked,dash=$("uuid-dash").checked;
+    var arr=[];
+    for(var i=0;i<n;i++){
+      var u=uuid();
+      if(!dash)u=u.replace(/-/g,"");
+      if(up)u=u.toUpperCase();
+      arr.push(u);
+    }
+    $("uuid-out").value=arr.join("\n");
+    setHint($("uuid-hint"),"已生成 "+n+" 个","ok");
+  });
+  bind("uuid-copy",function(){
+    var v=$("uuid-out").value;
+    if(!v){toast("暂无内容","err");return;}
+    copy(v);
+  });
+  bind("uuid-clear",function(){$("uuid-out").value="";setHint($("uuid-hint"),"");});
+
+  function escapeHtml(s){return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  bind("re-run",function(){
+    var pat=$("re-pattern").value,flags=$("re-flags").value,text=$("re-text").value;
+    var out=$("re-out"),hint=$("re-hint");
+    out.innerHTML="";
+    if(!pat){setHint(hint,"请输入正则表达式","err");return;}
+    var re;
+    try{re=new RegExp(pat,flags);}catch(e){setHint(hint,"正则错误："+e.message,"err");return;}
+    var global=flags.indexOf("g")>=0;
+    var results=[];
+    if(global){
+      var m;
+      while((m=re.exec(text))!==null){
+        results.push(m);
+        if(m.index===re.lastIndex)re.lastIndex++;
+      }
+    }else{
+      var m2=text.match(re);
+      if(m2)results.push(m2);
+    }
+    if(!results.length){setHint(hint,"无匹配结果","err");out.innerHTML='<div class="match-item" style="color:var(--text-mute)">（无匹配）</div>';return;}
+    var html="";
+    results.forEach(function(m,i){
+      var segs=[];
+      for(var k=0;k<m.length;k++){
+        segs.push('<span class="g">['+k+']</span> '+escapeHtml(m[k]));
+      }
+      html+='<div class="match-item"><b>匹配 #'+(i+1)+'</b> @ index '+m.index+'<br>'+segs.join("<br>")+'</div>';
+    });
+    out.innerHTML=html;
+    setHint(hint,"共 "+results.length+" 组匹配","ok");
+  });
+  bind("re-clear",function(){$("re-pattern").value="";$("re-flags").value="";$("re-text").value="";$("re-out").innerHTML="";setHint($("re-hint"),"");});
+
+  function hexToRgb(h){
+    h=h.replace(/^#/,"").trim();
+    if(h.length===3)h=h.split("").map(function(c){return c+c;}).join("");
+    if(h.length!==6)return null;
+    var n=parseInt(h,16);
+    if(isNaN(n))return null;
+    return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+  }
+  function rgbToHex(r,g,b){
+    function h2(v){v=Math.max(0,Math.min(255,Math.round(v)));return (v<16?"0":"")+v.toString(16);}
+    return "#"+h2(r)+h2(g)+h2(b);
+  }
+  function syncColorPreview(hex){if(hex)$("c-picker").value=hex;}
+  bind("c-hex2rgb",function(){
+    var v=$("c-hex").value.trim();
+    if(v&&v.charAt(0)!=="#"){v="#"+v;$("c-hex").value=v;}
+    var rgb=hexToRgb(v);
+    if(!rgb){setHint($("c-hint"),"HEX 格式无效","err");return;}
+    $("c-rgb").value="rgb("+rgb.r+", "+rgb.g+", "+rgb.b+")";
+    syncColorPreview(rgbToHex(rgb.r,rgb.g,rgb.b));
+    setHint($("c-hint"),"转换成功","ok");
+  });
+  bind("c-rgb2hex",function(){
+    var v=$("c-rgb").value;
+    var m=v.match(/\d+/g);
+    if(!m||m.length<3){setHint($("c-hint"),"RGB 格式无效，需如 rgb(79, 140, 255)","err");return;}
+    var hex=rgbToHex(+m[0],+m[1],+m[2]);
+    $("c-hex").value=hex;
+    syncColorPreview(hex);
+    setHint($("c-hint"),"转换成功","ok");
+  });
+  bind("c-clear",function(){$("c-hex").value="";$("c-rgb").value="";syncColorPreview("#4f8cff");setHint($("c-hint"),"输入任一格式，自动转换另一格式");});
+  var PWD_HKEY="dtk_pwd_history";
+  function pwdLoad(){try{var s=localStorage.getItem(PWD_HKEY);return s?JSON.parse(s):new Array();}catch(e){return new Array();}}
+  function pwdSave(arr){try{localStorage.setItem(PWD_HKEY,JSON.stringify(arr));}catch(e){}}
+  function pwdRender(){var arr=pwdLoad();$("pwd-history").value=arr.slice(-20).reverse().join("\n");}
+  function pwdAdd(p){var arr=pwdLoad();arr.push(p);if(arr.length>50)arr=arr.slice(-50);pwdSave(arr);pwdRender();}
+  function pwdGen(){
+    var len=parseInt($("pwd-len").value,10);
+    if(isNaN(len))len=16;
+    if(len<4)len=4;
+    if(len>128)len=128;
+    var sets=new Array();
+    if($("pwd-upper").checked)sets.push("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    if($("pwd-lower").checked)sets.push("abcdefghijklmnopqrstuvwxyz");
+    if($("pwd-digit").checked)sets.push("0123456789");
+    if($("pwd-symbol").checked)sets.push("!@#$%^&*()-_=+[]{};:,.<>?");
+    if(!sets.length){setHint($("pwd-hint"),"请至少选择一种字符集","err");return;}
+    if($("pwd-exclude").checked){var ex="iIl1o0O";sets=sets.map(function(s){return s.split("").filter(function(c){return ex.indexOf(c)<0;}).join("");});}
+    var all=sets.join("");
+    var pool=sets.map(function(s){return s.charAt(Math.floor(Math.random()*s.length));}).join("");
+    while(pool.length<len)pool+=all.charAt(Math.floor(Math.random()*all.length));
+    pool=pool.split("").sort(function(){return Math.random()-0.5;}).join("");
+    var pwd=pool.slice(0,len);
+    $("pwd-out").value=pwd;
+    pwdAdd(pwd);
+    setHint($("pwd-hint"),"已生成 "+len+" 位密码","ok");
+  }
+  bind("pwd-gen",pwdGen);
+  bind("pwd-copy",function(){var v=$("pwd-out").value;if(!v){toast("请先生成密码","err");return;}copy(v);});
+  bind("pwd-clear",function(){$("pwd-out").value="";$("pwd-len").value=16;setHint($("pwd-hint"),"");});
+  bind("pwd-clear-history",function(){pwdSave(new Array());pwdRender();setHint($("pwd-hint"),"历史已清空","ok");});
+  $("c-picker").addEventListener("input",function(){
+    var hex=this.value;
+    $("c-hex").value=hex;
+    var rgb=hexToRgb(hex);
+    if(rgb){$("c-rgb").value="rgb("+rgb.r+", "+rgb.g+", "+rgb.b+")";}
+    syncColorPreview(hex);
+    setHint($("c-hint"),"取色已应用","ok");
+  });
+
+  function encEnt(s){
+    var d=document.createElement("div");d.textContent=s;return d.innerHTML;
+  }
+  function decEnt(s){
+    var d=document.createElement("div");d.innerHTML=s;return d.textContent||"";
+  }
+  bind("html-encode",function(){
+    $("html-out").value=encEnt($("html-in").value);
+    setHint($("html-hint"),"编码成功","ok");
+  });
+  bind("html-decode",function(){
+    $("html-out").value=decEnt($("html-in").value);
+    setHint($("html-hint"),"解码成功","ok");
+  });
+  bind("html-clear",function(){$("html-in").value="";$("html-out").value="";setHint($("html-hint"),"");});
+
+  document.querySelectorAll("textarea,input").forEach(function(el){
+    el.addEventListener("keydown",function(e){
+      if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){
+        var panel=el.closest(".panel");
+        var btn=panel&&panel.querySelector(".btn-primary");
+        if(btn){btn.click();}
+      }
+    });
+  });
+  pwdRender();
+})();
+</script>
+</body>
+</html>
